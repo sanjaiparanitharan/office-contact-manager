@@ -1,0 +1,19 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Deploy Backend') {
+            steps {
+                powershell 'cd backend; ./deploy.ps1'
+            }
+        }
+
+        stage('Deploy Frontend') {
+            steps {
+                powershell 'aws s3 sync frontend/ s3://office-records-frontend'
+            }
+        }
+
+    }
+}
