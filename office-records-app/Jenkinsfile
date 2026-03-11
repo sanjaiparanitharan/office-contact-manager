@@ -18,11 +18,11 @@ pipeline {
             }
         }
 
-        stage('Deploy Frontend to S3') {
-            steps {
-                sh 'aws s3 sync office-records-app/frontend/ s3://$S3_BUCKET --delete'
-            }
-        }
+        stage('Clone Repo') {
+    steps {
+        git branch: 'main', url: 'https://github.com/sanjaiparanitharan/office-contact-manager.git'
+    }
+}
 
         stage('Invalidate CloudFront Cache') {
             steps {
@@ -60,5 +60,6 @@ pipeline {
         failure { echo "❌ Deployment Failed" }
     }
 }
+
 
 
