@@ -1,20 +1,44 @@
 pipeline {
     agent any
 
+    environment {
+        AWS_REGION = 'us-east-2'
+        S3_BUCKET = 'office-records-frontend'           // your frontend S3 bucket
+        LAMBDA_FUNCTION = 'office-records-backend'      // your Lambda function name
+        CLOUDFRONT_DISTRIBUTION_ID = 'E252RQP7IK1CVC'  // your CloudFront ID
+    }
+
     stages {
 
-        stage('Deploy Backend') {
+        stage('Deploy Frontend to S3') {
             steps {
+                echo "Uploading frontend to S3..."
+                sh 'aws s3 sync frontend/ s3://$S3_BUCKET --delete --region $AWS_REGION'
+            }
+        }
+
+        stage('Deploy Backend Lambda') {
+            steps {
+                echo "Packaging and uploading Lambda backend..."
                 sh 'zip -r lambda.zip backend/*'
-                sh 'aws lambda update-function-code --function-name office-records-backend --zip-file fileb://lambda.zip --region us-east-2'
+                sh 'aws lambda update-function-code --function-name $LAMBDA_FUNCTION --zip-file fileb://lambda.zip --region $AWS_REGION'
             }
         }
 
-        stage('Deploy Frontend') {
+        stage('Invalidate CloudFront Cache') {
             steps {
-                sh 'aws s3 sync frontend/ s3://office-records-frontend --delete --region us-east-2'
+                echo "Invalidating CloudFront cache..."
+                sh 'aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"'
             }
         }
+    }
 
+    post {
+        success {
+            echo '✅ Deployment Successful!'
+        }
+        failure {
+            echo '❌ Deployment Failed!'
+        }
     }
 }
