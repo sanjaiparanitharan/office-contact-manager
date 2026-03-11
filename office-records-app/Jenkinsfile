@@ -3,42 +3,61 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-2'
-        S3_BUCKET = 'office-records-frontend'           // your frontend S3 bucket
-        LAMBDA_FUNCTION = 'office-records-backend'      // your Lambda function name
-        CLOUDFRONT_DISTRIBUTION_ID = 'E252RQP7IK1CVC'  // your CloudFront ID
+        S3_BUCKET = 'office-records-frontend'
+        CLOUDFRONT_DIST = 'E252RQP7IK1CVC'
+        LAMBDA_FUNCTION = 'office-records-api'
+        API_ID = 'h4uoooso2l'
+        STAGE = 'prod'
     }
 
     stages {
 
-        stage('Deploy Frontend to S3') {
+        stage('Clone Repo') {
             steps {
-                echo "Uploading frontend to S3..."
-                sh 'aws s3 sync frontend/ s3://$S3_BUCKET --delete --region $AWS_REGION'
+                git 'https://github.com/YOUR_USERNAME/office-contact-manager.git'
             }
         }
 
-        stage('Deploy Backend Lambda') {
+        stage('Deploy Frontend to S3') {
             steps {
-                echo "Packaging and uploading Lambda backend..."
-                sh 'zip -r lambda.zip backend/*'
-                sh 'aws lambda update-function-code --function-name $LAMBDA_FUNCTION --zip-file fileb://lambda.zip --region $AWS_REGION'
+                sh 'aws s3 sync frontend/ s3://$S3_BUCKET --delete'
             }
         }
 
         stage('Invalidate CloudFront Cache') {
             steps {
-                echo "Invalidating CloudFront cache..."
-                sh 'aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"'
+                sh 'aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DIST --paths "/*"'
+            }
+        }
+
+        stage('Deploy Lambda Backend') {
+            steps {
+                sh '''
+                cd backend
+                zip -r lambda.zip .
+                aws lambda update-function-code \
+                  --function-name $LAMBDA_FUNCTION \
+                  --zip-file fileb://lambda.zip \
+                  --region $AWS_REGION
+                '''
+            }
+        }
+
+        stage('Deploy API Gateway') {
+            steps {
+                sh '''
+                aws apigateway create-deployment \
+                  --rest-api-id $API_ID \
+                  --stage-name $STAGE \
+                  --region $AWS_REGION
+                '''
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Deployment Successful!'
-        }
-        failure {
-            echo '❌ Deployment Failed!'
-        }
+        success { echo "✅ Deployment Successful" }
+        failure { echo "❌ Deployment Failed" }
     }
 }
+
