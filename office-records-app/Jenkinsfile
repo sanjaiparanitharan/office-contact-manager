@@ -14,13 +14,13 @@ pipeline {
 
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/YOUR_USERNAME/office-contact-manager.git'
+                git 'https://github.com/sanjaiparanitharan/office-contact-manager.git'
             }
         }
 
         stage('Deploy Frontend to S3') {
             steps {
-                sh 'aws s3 sync frontend/ s3://$S3_BUCKET --delete'
+                sh 'aws s3 sync office-records-app/frontend/ s3://$S3_BUCKET --delete'
             }
         }
 
@@ -33,7 +33,7 @@ pipeline {
         stage('Deploy Lambda Backend') {
             steps {
                 sh '''
-                cd backend
+                cd office-records-app/backend
                 zip -r lambda.zip .
                 aws lambda update-function-code \
                   --function-name $LAMBDA_FUNCTION \
@@ -60,4 +60,5 @@ pipeline {
         failure { echo "❌ Deployment Failed" }
     }
 }
+
 
