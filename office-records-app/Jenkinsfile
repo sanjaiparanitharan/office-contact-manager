@@ -5,13 +5,14 @@ pipeline {
 
         stage('Deploy Backend') {
             steps {
-                powershell 'cd backend; ./deploy.ps1'
+                sh 'zip -r lambda.zip backend/*'
+                sh 'aws lambda update-function-code --function-name office-records-backend --zip-file fileb://lambda.zip --region us-east-2'
             }
         }
 
         stage('Deploy Frontend') {
             steps {
-                powershell 'aws s3 sync frontend/ s3://office-records-frontend'
+                sh 'aws s3 sync frontend/ s3://office-records-frontend --delete --region us-east-2'
             }
         }
 
