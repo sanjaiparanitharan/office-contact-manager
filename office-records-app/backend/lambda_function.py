@@ -8,7 +8,6 @@ table = dynamodb.Table('office-records')
 def lambda_handler(event, context):
     method = event['httpMethod']
 
-    # CREATE RECORD
     if method == "POST":
         body = json.loads(event['body'])
         item = {
@@ -23,38 +22,35 @@ def lambda_handler(event, context):
         table.put_item(Item=item)
         return {"statusCode": 200, "body": json.dumps({"message": "Record added"})}
 
-    # GET RECORDS
     elif method == "GET":
         response = table.scan()
         return {"statusCode": 200, "body": json.dumps(response["Items"])}
 
-    # DELETE RECORD
     elif method == "DELETE":
         body = json.loads(event['body'])
         table.delete_item(Key={"id": body["id"]})
         return {"statusCode": 200, "body": json.dumps({"message": "Record deleted"})}
 
-    # UPDATE RECORD
     elif method == "PUT":
         body = json.loads(event['body'])
         record_id = body.get("id")
         if not record_id:
             return {"statusCode": 400, "body": json.dumps({"message": "ID is required"})}
 
-        # Dynamically build update expression
+        # Prepare update
         update_expr = "SET "
         expr_attr_vals = {}
-        update_fields = []
+        fields_to_update = []
 
         for field in ["name", "phone", "email", "task", "status"]:
             if field in body:
-                update_fields.append(f"{field} = :{field[0]}")
+                fields_to_update.append(f"{field} = :{field[0]}")
                 expr_attr_vals[f":{field[0]}"] = body[field]
 
-        if not update_fields:
+        if not fields_to_update:
             return {"statusCode": 400, "body": json.dumps({"message": "No fields to update"})}
 
-        update_expr += ", ".join(update_fields)
+        update_expr += ", ".join(fields_to_update)
 
         table.update_item(
             Key={"id": record_id},
@@ -66,4 +62,5 @@ def lambda_handler(event, context):
 
     else:
         return {"statusCode": 405, "body": json.dumps({"message": "Method not allowed"})}
+
 
