@@ -41,7 +41,7 @@ def lambda_handler(event, context):
         if not record_id:
             return {"statusCode": 400, "body": json.dumps({"message": "ID is required"})}
 
-        # Build UpdateExpression dynamically
+        # Dynamically build update expression
         update_expr = "SET "
         expr_attr_vals = {}
         update_fields = []
@@ -55,11 +55,15 @@ def lambda_handler(event, context):
             return {"statusCode": 400, "body": json.dumps({"message": "No fields to update"})}
 
         update_expr += ", ".join(update_fields)
-        table.update_item(Key={"id": record_id},
-                          UpdateExpression=update_expr,
-                          ExpressionAttributeValues=expr_attr_vals)
+
+        table.update_item(
+            Key={"id": record_id},
+            UpdateExpression=update_expr,
+            ExpressionAttributeValues=expr_attr_vals
+        )
 
         return {"statusCode": 200, "body": json.dumps({"message": "Record updated"})}
 
     else:
         return {"statusCode": 405, "body": json.dumps({"message": "Method not allowed"})}
+
